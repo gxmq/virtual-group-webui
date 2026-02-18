@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, SimpleGrid, Text, Heading, Card, CardBody, Badge, Flex, Icon } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
+import { Box, SimpleGrid, Text, Heading, Card, CardBody, Badge, Flex, Spinner, Center, Button } from '@chakra-ui/react';
 
 interface Floor {
   id: string;
@@ -33,36 +34,77 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [floors, setFloors] = useState<Floor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchFloors = () => {
+    setLoading(true);
+    setError(null);
     fetch('/api/tower')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then(data => {
         setFloors(data.floors || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchFloors();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchFloors, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const handleFloorClick = (floorId: string) => {
+    router.push(`/floor/${floorId}`);
+  };
+
+  const handleRetry = () => {
+    fetchFloors();
+  };
 
   if (loading) {
     return (
-      <Box minH="100vh" bg="gray.900" p={8}>
-        <Heading color="white" size="lg">Virtual Group Tower</Heading>
-        <Text color="gray.400">加载中...</Text>
-      </Box>
+      <Center minH="100vh" bg="gray.900">
+        <Spinner size="xl" color="blue.400" thickness="4px" />
+        <Text color="gray.400" ml={4}>加载中...</Text>
+      </Center>
+    );
+  }
+
+  if (error) {
+    return (
+      <Center minH="100vh" bg="gray.900" flexDirection="column">
+        <Text color="red.400" mb={4}>加载失败: {error}</Text>
+        <Button colorScheme="blue" onClick={handleRetry}>重试</Button>
+      </Center>
     );
   }
 
   return (
     <Box minH="100vh" bg="gray.900" p={8}>
-      <Heading color="white" size="lg" mb={2}>
-        Virtual Group Tower
-      </Heading>
-      <Text color="gray.400" mb={8}>
-        6 层虚拟公司运营状态
-      </Text>
+      <Flex justify="space-between" align="center" mb={2}>
+        <Box>
+          <Heading color="white" size="lg">
+            Virtual Group Tower
+          </Heading>
+          <Text color="gray.400">
+            6 层虚拟公司运营状态
+          </Text>
+        </Box>
+        <Button size="sm" variant="outline" colorScheme="gray" onClick={fetchFloors}>
+          刷新
+        </Button>
+      </Flex>
 
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
         {floors.map((floor) => (
@@ -71,8 +113,10 @@ export default function Home() {
             bg="gray.800" 
             borderWidth="1px" 
             borderColor={floor.enabled ? 'green.500' : 'gray.700'}
-            _hover={{ borderColor: 'blue.400' }}
+            _hover={{ borderColor: 'blue.400', transform: 'translateY(-2px)', cursor: 'pointer' }}
             cursor="pointer"
+            transition="all 0.2s"
+            onClick={() => handleFloorClick(floor.id)}
           >
             <CardBody>
               <Flex justify="space-between" align="center" mb={4}>
