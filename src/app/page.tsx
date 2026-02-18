@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, SimpleGrid, Text, Heading, Card, CardBody, Badge, Flex, Spinner, Center, Button } from '@chakra-ui/react';
+import { Box, SimpleGrid, Text, Heading, Card, CardBody, Badge, Flex, Spinner, Center, Button, HStack } from '@chakra-ui/react';
+import { ThemeToggle } from './components/ThemeToggle';
 
 interface Floor {
   id: string;
@@ -101,9 +102,12 @@ export default function Home() {
             6 层虚拟公司运营状态
           </Text>
         </Box>
-        <Button size="sm" variant="outline" colorScheme="gray" onClick={fetchFloors}>
-          刷新
-        </Button>
+        <HStack>
+          <ThemeToggle />
+          <Button size="sm" variant="outline" colorScheme="gray" onClick={fetchFloors}>
+            刷新
+          </Button>
+        </HStack>
       </Flex>
 
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
